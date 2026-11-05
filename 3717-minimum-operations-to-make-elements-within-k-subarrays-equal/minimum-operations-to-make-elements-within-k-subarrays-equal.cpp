@@ -1,61 +1,86 @@
 class Solution {
 public:
-    long long minOperations(vector<int>& nums, int x, int k) {
+    long long arr[100001][16];
+    void helper_to_calculate_cost(vector<long long>&cost ,vector<int>& nums , int x){
+        // first lets find the median of array of value x at every index
         int n = nums.size();
-        vector<int> vals(nums);
-        sort(vals.begin(), vals.end());
-        vals.erase(unique(vals.begin(), vals.end()), vals.end());
-        int m = vals.size();
-        vector<int> rk(n);
-        for (int i = 0; i < n; i++) {
-            rk[i] = lower_bound(vals.begin(), vals.end(), nums[i]) - vals.begin() + 1;
-        }
-        vector<int> cnt(m + 1, 0);
-        vector<long long> sm(m + 1, 0);
-        int top = 1;
-        while (top * 2 <= m) top *= 2;
-        int need = (x + 1) / 2;
-        int w = n - x + 1;
-        vector<long long> cost(w);
-        long long total = 0;
-        for (int i = 0; i < n; i++) {
-            total += nums[i];
-            for (int p = rk[i]; p <= m; p += p & -p) {
-                cnt[p] += 1;
-                sm[p] += nums[i];
+        multiset<int>left;
+        multiset<int>right;
+        int i = 0;
+        int j = 0;
+        long long leftsum = 0;
+        long long rightsum = 0;
+        vector<int>median;
+        while(j < n){
+           
+            if(left.empty() or left.size() <= right.size()){
+                left.insert(nums[j]);
+                leftsum += nums[j];
             }
-            if (i >= x) {
-                total -= nums[i - x];
-                for (int p = rk[i - x]; p <= m; p += p & -p) {
-                    cnt[p] -= 1;
-                    sm[p] -= nums[i - x];
+            else{
+                right.insert(nums[j]);
+                rightsum += nums[j];
+            }
+            if(!left.empty() and !right.empty()){
+                int left_lastelement = *(prev(left.end()));
+                int right_firstelement = *(right.begin());
+                if(left_lastelement > right_firstelement){
+                    left.erase(prev(left.end()));
+                    right.erase(right.begin());
+                    rightsum -= right_firstelement;
+                    rightsum += left_lastelement;
+                    leftsum += right_firstelement;
+                    leftsum -= left_lastelement;
+                    left.insert(right_firstelement);
+                    right.insert(left_lastelement);
                 }
             }
-            if (i >= x - 1) {
-                int pos = 0, rem = need;
-                long long s0 = 0;
-                for (int pw = top; pw > 0; pw >>= 1) {
-                    int nxt = pos + pw;
-                    if (nxt <= m && cnt[nxt] < rem) {
-                        pos = nxt;
-                        rem -= cnt[nxt];
-                        s0 += sm[nxt];
-                    }
+
+            if(j-i +1 == x){
+                // when the size os equal to x we will slid the median into our array
+                int med = *(prev(left.end()));
+                median.push_back(med); 
+                // prev will find iterator just before the end  ,and end points to the last of the element.
+                // i will find the value of i in both and will remove frome 1
+                long long val =  (left.size() * med - leftsum) + (rightsum - right.size() * med);
+                cost.push_back(val);
+
+                if(left.find(nums[i]) != left.end()){
+                    left.erase(left.find(nums[i]));
+                    leftsum-= nums[i];
                 }
-                long long med = vals[pos];
-                long long c0 = need - rem;
-                cost[i - x + 1] = med * c0 - s0 + (total - s0) - med * (x - c0);
+                else{
+                    right.erase(right.find(nums[i]));
+                    rightsum -= nums[i];
+                }
+                i++;
             }
+            j++;
         }
-        const long long INF = 1000000000000000000LL;
-        vector<long long> prev(n + 1, 0), cur(n + 1, 0);
-        for (int j = 0; j < k; j++) {
-            for (int i = 0; i < x; i++) cur[i] = INF;
-            for (int i = x; i <= n; i++) {
-                cur[i] = min(cur[i - 1], prev[i - x] + cost[i - x]);
-            }
-            swap(prev, cur);
+       
+
+    }
+    long long helper2(vector<int>&nums , vector<long long>&cost , int count , int k , int i , int x){
+        if(count == k){
+            return 0;
         }
-        return prev[n];
+        int subarrayeeded = k - count;
+         int elementsneeded = subarrayeeded * x;
+         if(nums.size() - i < elementsneeded ){
+            return 1e15;
+         }
+        if(arr[i][count]!= -1){
+            return arr[i][count];
+        }
+        long long take = cost[i] + helper2(nums , cost , count +1 , k , i + x , x );
+        take = min(take , helper2(nums , cost , count , k , i+1 , x ));
+        return arr[i][count] = take;
+    }
+    long long minOperations(vector<int>& nums, int x, int k) {
+        vector<long long>cost; // min moves to find of size x at that index
+        helper_to_calculate_cost(cost , nums , x);
+        memset(arr ,-1 , sizeof(arr));
+        return helper2(nums , cost , 0 , k , 0 , x );
+        
     }
 };
