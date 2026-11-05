@@ -9,6 +9,7 @@ public:
             for(int j = 0; j<m; j++){
                 if(abs(arr1[i] - arr2[j]) <= d){
                     flag = false;
+                    break;
                 }
             }
             if(flag){
